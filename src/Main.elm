@@ -81,7 +81,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         UpdatePin pin ->
-            ( if String.length pin < 4 then
+            ( if String.length pin <= 4 then
                 { model | pin = pin }
 
               else
