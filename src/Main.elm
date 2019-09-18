@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Browser
 import Element exposing (..)
@@ -10,8 +10,20 @@ import Element.Region as Region
 import Employee exposing (Employee)
 import Html exposing (Html)
 import JobRole exposing (JobRole)
+import Json.Decode as Decode
+import Json.Encode as Encode
 import Task
 import Time exposing (Posix)
+import TimeEntry exposing (TimeEntry)
+
+
+port addTimeEntry : ( String, Int, Maybe Int ) -> Cmd msg
+
+
+port timeEntriesUpdated : (List ( String, Int, Maybe Int ) -> msg) -> Sub msg
+
+
+port temporaryClockedInMsg : String -> Cmd msg
 
 
 white =
@@ -45,16 +57,17 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    timeEntriesUpdated SetTimeEntries
 
 
-init : () -> ( Model, Cmd Msg )
-init _ =
+init : List ( String, Int, Maybe Int ) -> ( Model, Cmd Msg )
+init timeEntries =
     ( { pin = ""
       , jobRole = Nothing
       , cashCollected = ""
       , clockedInPosix = Nothing
       , employee = Nothing
+      , timeEntries = []
       }
     , Cmd.none
     )
@@ -66,6 +79,7 @@ type alias Model =
     , cashCollected : String
     , clockedInPosix : Maybe Posix
     , employee : Maybe Employee
+    , timeEntries : List TimeEntry
     }
 
 
@@ -75,6 +89,7 @@ type Msg
     | UpdateCashCollected String
     | ClockInClockOut
     | NewTime Time.Posix
+    | SetTimeEntries (List ( String, Int, Maybe Int ))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -97,16 +112,29 @@ update msg model =
 
         ClockInClockOut ->
             ( { model | pin = "", jobRole = Nothing, cashCollected = "" }
-            , case model.clockedInPosix of
-                Just _ ->
-                    Task.perform NewTime Time.now
-
-                Nothing ->
-                    Cmd.none
+            , temporaryClockedInMsg "You've Clocked In successfully!"
+              -- , case model.clockedInPosix of
+              --     Just _ ->
+              --         Task.perform NewTime Time.now
+              --     Nothing ->
+              --         Cmd.none
             )
 
         NewTime now ->
-            ( { model | clockedInPosix = Just now }, Cmd.none )
+            ( { model | clockedInPosix = Just now }, addTimeEntry ( "test", 0, Nothing ) )
+
+        SetTimeEntries timeEntries ->
+            ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }, Cmd.none )
+
+
+
+-- ( case Decode.list (TimeEntry.timeEntryDecoder timeEntryJson) of
+--     Ok timeEntries ->
+--         { model | timeEntries = timeEntries }
+--     Err errorMsg ->
+--         Debug.todo errorMsg
+-- , Cmd.none
+-- )
 
 
 view : Model -> Html Msg
@@ -119,7 +147,14 @@ view model =
         [ Font.size 20
         ]
     <|
-        Element.column [ width (px 800), height shrink, centerY, centerX, spacing 36, padding 10 ]
+        Element.column
+            [ width (px 800)
+            , height shrink
+            , alignTop
+            , centerX
+            , spacing 36
+            , paddingEach { top = 100, bottom = 10, left = 10, right = 10 }
+            ]
             [ el
                 [ Region.heading 1
                 , alignLeft
@@ -142,7 +177,7 @@ view model =
                 { text = model.pin
                 , placeholder = Nothing
                 , onChange = UpdatePin
-                , label = Input.labelAbove [ Font.size 14 ] (text "PIN Number Entry")
+                , label = Input.labelAbove [ Font.size 14 ] (text "Please enter 4 digit PIN Number")
                 , show = False
                 }
             , showIfPin showSecureSection (positionSelect model)
@@ -221,10 +256,10 @@ clockInClockOutText : Maybe Posix -> String
 clockInClockOutText clockedInPosix =
     case clockedInPosix of
         Just _ ->
-            "Clock In"
+            "Clock Out"
 
         Nothing ->
-            "Clock Out"
+            "Clock In"
 
 
 toInputOption jobRole =
