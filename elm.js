@@ -2314,6 +2314,52 @@ function _Platform_mergeExportsDebug(moduleName, obj, exports)
 
 
 
+function _Time_now(millisToPosix)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(millisToPosix(Date.now())));
+	});
+}
+
+var _Time_setInterval = F2(function(interval, task)
+{
+	return _Scheduler_binding(function(callback)
+	{
+		var id = setInterval(function() { _Scheduler_rawSpawn(task); }, interval);
+		return function() { clearInterval(id); };
+	});
+});
+
+function _Time_here()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		callback(_Scheduler_succeed(
+			A2(elm$time$Time$customZone, -(new Date().getTimezoneOffset()), _List_Nil)
+		));
+	});
+}
+
+
+function _Time_getZoneName()
+{
+	return _Scheduler_binding(function(callback)
+	{
+		try
+		{
+			var name = elm$time$Time$Name(Intl.DateTimeFormat().resolvedOptions().timeZone);
+		}
+		catch (e)
+		{
+			var name = elm$time$Time$Offset(new Date().getTimezoneOffset());
+		}
+		callback(_Scheduler_succeed(name));
+	});
+}
+
+
+
 var _Bitwise_and = F2(function(a, b)
 {
 	return a & b;
@@ -4872,6 +4918,9 @@ var author$project$Main$timeEntriesUpdated = _Platform_incomingPort(
 var author$project$Main$subscriptions = function (_n0) {
 	return author$project$Main$timeEntriesUpdated(author$project$Main$SetTimeEntries);
 };
+var author$project$Main$NewTime = function (a) {
+	return {$: 'NewTime', a: a};
+};
 var elm$core$Basics$identity = function (x) {
 	return x;
 };
@@ -4989,6 +5038,101 @@ var elm$core$List$map = F2(
 			xs);
 	});
 var elm$core$String$length = _String_length;
+var elm$core$Task$Perform = function (a) {
+	return {$: 'Perform', a: a};
+};
+var elm$core$Task$succeed = _Scheduler_succeed;
+var elm$core$Task$init = elm$core$Task$succeed(_Utils_Tuple0);
+var elm$core$Task$andThen = _Scheduler_andThen;
+var elm$core$Task$map = F2(
+	function (func, taskA) {
+		return A2(
+			elm$core$Task$andThen,
+			function (a) {
+				return elm$core$Task$succeed(
+					func(a));
+			},
+			taskA);
+	});
+var elm$core$Task$map2 = F3(
+	function (func, taskA, taskB) {
+		return A2(
+			elm$core$Task$andThen,
+			function (a) {
+				return A2(
+					elm$core$Task$andThen,
+					function (b) {
+						return elm$core$Task$succeed(
+							A2(func, a, b));
+					},
+					taskB);
+			},
+			taskA);
+	});
+var elm$core$Task$sequence = function (tasks) {
+	return A3(
+		elm$core$List$foldr,
+		elm$core$Task$map2(elm$core$List$cons),
+		elm$core$Task$succeed(_List_Nil),
+		tasks);
+};
+var elm$core$Platform$sendToApp = _Platform_sendToApp;
+var elm$core$Task$spawnCmd = F2(
+	function (router, _n0) {
+		var task = _n0.a;
+		return _Scheduler_spawn(
+			A2(
+				elm$core$Task$andThen,
+				elm$core$Platform$sendToApp(router),
+				task));
+	});
+var elm$core$Task$onEffects = F3(
+	function (router, commands, state) {
+		return A2(
+			elm$core$Task$map,
+			function (_n0) {
+				return _Utils_Tuple0;
+			},
+			elm$core$Task$sequence(
+				A2(
+					elm$core$List$map,
+					elm$core$Task$spawnCmd(router),
+					commands)));
+	});
+var elm$core$Task$onSelfMsg = F3(
+	function (_n0, _n1, _n2) {
+		return elm$core$Task$succeed(_Utils_Tuple0);
+	});
+var elm$core$Task$cmdMap = F2(
+	function (tagger, _n0) {
+		var task = _n0.a;
+		return elm$core$Task$Perform(
+			A2(elm$core$Task$map, tagger, task));
+	});
+_Platform_effectManagers['Task'] = _Platform_createManager(elm$core$Task$init, elm$core$Task$onEffects, elm$core$Task$onSelfMsg, elm$core$Task$cmdMap);
+var elm$core$Task$command = _Platform_leaf('Task');
+var elm$core$Task$perform = F2(
+	function (toMessage, task) {
+		return elm$core$Task$command(
+			elm$core$Task$Perform(
+				A2(elm$core$Task$map, toMessage, task)));
+	});
+var elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var elm$time$Time$customZone = elm$time$Time$Zone;
+var elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var elm$time$Time$millisToPosix = elm$time$Time$Posix;
+var elm$time$Time$now = _Time_now(elm$time$Time$millisToPosix);
 var author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -5020,15 +5164,27 @@ var author$project$Main$update = F2(
 					_Utils_update(
 						model,
 						{cashCollected: '', jobRole: elm$core$Maybe$Nothing, pin: ''}),
-					author$project$Main$temporaryClockedInMsg('You\'ve Clocked In successfully!'));
+					elm$core$Platform$Cmd$batch(
+						_List_fromArray(
+							[
+								author$project$Main$temporaryClockedInMsg('You\'ve Clocked In successfully!'),
+								A2(elm$core$Task$perform, author$project$Main$NewTime, elm$time$Time$now)
+							])));
 			case 'NewTime':
 				var now = msg.a;
 				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							clockedInPosix: elm$core$Maybe$Just(now)
-						}),
+					function () {
+						var _n1 = model.clockedInPosix;
+						if (_n1.$ === 'Just') {
+							return model;
+						} else {
+							return _Utils_update(
+								model,
+								{
+									clockedInPosix: elm$core$Maybe$Just(now)
+								});
+						}
+					}(),
 					author$project$Main$addTimeEntry(
 						_Utils_Tuple3('test', 0, elm$core$Maybe$Nothing)));
 			default:
@@ -5039,10 +5195,10 @@ var author$project$Main$update = F2(
 						{
 							timeEntries: A2(
 								elm$core$List$map,
-								function (_n1) {
-									var pin = _n1.a;
-									var start = _n1.b;
-									var end = _n1.c;
+								function (_n2) {
+									var pin = _n2.a;
+									var start = _n2.b;
+									var end = _n2.c;
 									return A3(author$project$TimeEntry$TimeEntry, pin, start, end);
 								},
 								timeEntries)
@@ -5054,10 +5210,35 @@ var author$project$JobRole$JobRole = F2(
 	function (description, doesCashOut) {
 		return {description: description, doesCashOut: doesCashOut};
 	});
+var author$project$JobRole$assistantManager = A2(author$project$JobRole$JobRole, 'Assistant Manager', false);
 var author$project$JobRole$cashier = A2(author$project$JobRole$JobRole, 'Cashier', true);
 var author$project$JobRole$generalManager = A2(author$project$JobRole$JobRole, 'General Manager', false);
 var author$project$JobRole$lineCook = A2(author$project$JobRole$JobRole, 'Line Cook', false);
 var author$project$JobRole$server = A2(author$project$JobRole$JobRole, 'Server', true);
+var author$project$JobRole$all = _List_fromArray(
+	[
+		author$project$JobRole$generalManager,
+		author$project$JobRole$assistantManager,
+		author$project$JobRole$lineCook,
+		A2(author$project$JobRole$JobRole, 'Dishwasher', false),
+		A2(author$project$JobRole$JobRole, 'Drive-Thru Operator', false),
+		A2(author$project$JobRole$JobRole, 'Fast Food Cook', false),
+		author$project$JobRole$cashier,
+		A2(author$project$JobRole$JobRole, 'Short Order Cook', false),
+		A2(author$project$JobRole$JobRole, 'Barista', false),
+		A2(author$project$JobRole$JobRole, 'Kitchen Manager', false),
+		A2(author$project$JobRole$JobRole, 'Food and Beverage Manager', false),
+		author$project$JobRole$server,
+		A2(author$project$JobRole$JobRole, 'Prep Cook', false),
+		A2(author$project$JobRole$JobRole, 'Runner', false),
+		A2(author$project$JobRole$JobRole, 'Busser', true),
+		A2(author$project$JobRole$JobRole, 'Host', false),
+		A2(author$project$JobRole$JobRole, 'Bartender', true),
+		A2(author$project$JobRole$JobRole, 'Executive Chef', false),
+		A2(author$project$JobRole$JobRole, 'Sous Chef', false),
+		A2(author$project$JobRole$JobRole, 'Maître D’', false),
+		A2(author$project$JobRole$JobRole, 'Sommelier', false)
+	]);
 var author$project$Employee$all = _List_fromArray(
 	[
 		{
@@ -5075,7 +5256,8 @@ var author$project$Employee$all = _List_fromArray(
 		lastName: 'Stevens',
 		middleName: '',
 		pin: '1739'
-	}
+	},
+		{firstName: 'Everything', jobRoles: author$project$JobRole$all, lastName: 'All the things', middleName: '', pin: '1111'}
 	]);
 var elm$core$List$filter = F2(
 	function (isGood, list) {
@@ -12799,85 +12981,6 @@ var elm$core$Basics$never = function (_n0) {
 		continue never;
 	}
 };
-var elm$core$Task$Perform = function (a) {
-	return {$: 'Perform', a: a};
-};
-var elm$core$Task$succeed = _Scheduler_succeed;
-var elm$core$Task$init = elm$core$Task$succeed(_Utils_Tuple0);
-var elm$core$Task$andThen = _Scheduler_andThen;
-var elm$core$Task$map = F2(
-	function (func, taskA) {
-		return A2(
-			elm$core$Task$andThen,
-			function (a) {
-				return elm$core$Task$succeed(
-					func(a));
-			},
-			taskA);
-	});
-var elm$core$Task$map2 = F3(
-	function (func, taskA, taskB) {
-		return A2(
-			elm$core$Task$andThen,
-			function (a) {
-				return A2(
-					elm$core$Task$andThen,
-					function (b) {
-						return elm$core$Task$succeed(
-							A2(func, a, b));
-					},
-					taskB);
-			},
-			taskA);
-	});
-var elm$core$Task$sequence = function (tasks) {
-	return A3(
-		elm$core$List$foldr,
-		elm$core$Task$map2(elm$core$List$cons),
-		elm$core$Task$succeed(_List_Nil),
-		tasks);
-};
-var elm$core$Platform$sendToApp = _Platform_sendToApp;
-var elm$core$Task$spawnCmd = F2(
-	function (router, _n0) {
-		var task = _n0.a;
-		return _Scheduler_spawn(
-			A2(
-				elm$core$Task$andThen,
-				elm$core$Platform$sendToApp(router),
-				task));
-	});
-var elm$core$Task$onEffects = F3(
-	function (router, commands, state) {
-		return A2(
-			elm$core$Task$map,
-			function (_n0) {
-				return _Utils_Tuple0;
-			},
-			elm$core$Task$sequence(
-				A2(
-					elm$core$List$map,
-					elm$core$Task$spawnCmd(router),
-					commands)));
-	});
-var elm$core$Task$onSelfMsg = F3(
-	function (_n0, _n1, _n2) {
-		return elm$core$Task$succeed(_Utils_Tuple0);
-	});
-var elm$core$Task$cmdMap = F2(
-	function (tagger, _n0) {
-		var task = _n0.a;
-		return elm$core$Task$Perform(
-			A2(elm$core$Task$map, tagger, task));
-	});
-_Platform_effectManagers['Task'] = _Platform_createManager(elm$core$Task$init, elm$core$Task$onEffects, elm$core$Task$onSelfMsg, elm$core$Task$cmdMap);
-var elm$core$Task$command = _Platform_leaf('Task');
-var elm$core$Task$perform = F2(
-	function (toMessage, task) {
-		return elm$core$Task$command(
-			elm$core$Task$Perform(
-				A2(elm$core$Task$map, toMessage, task)));
-	});
 var elm$core$String$slice = _String_slice;
 var elm$core$String$dropLeft = F2(
 	function (n, string) {

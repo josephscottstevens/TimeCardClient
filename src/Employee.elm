@@ -26,6 +26,12 @@ all =
       , pin = "1739"
       , jobRoles = [ JobRole.cashier ]
       }
+    , { firstName = "Everything"
+      , lastName = "All the things"
+      , middleName = ""
+      , pin = "1111"
+      , jobRoles = JobRole.all
+      }
     ]
 
 

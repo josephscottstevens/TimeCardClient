@@ -112,7 +112,10 @@ update msg model =
 
         ClockInClockOut ->
             ( { model | pin = "", jobRole = Nothing, cashCollected = "" }
-            , temporaryClockedInMsg "You've Clocked In successfully!"
+            , Cmd.batch
+                [ temporaryClockedInMsg "You've Clocked In successfully!"
+                , Task.perform NewTime Time.now
+                ]
               -- , case model.clockedInPosix of
               --     Just _ ->
               --         Task.perform NewTime Time.now
@@ -121,7 +124,14 @@ update msg model =
             )
 
         NewTime now ->
-            ( { model | clockedInPosix = Just now }, addTimeEntry ( "test", 0, Nothing ) )
+            ( case model.clockedInPosix of
+                Just _ ->
+                    model
+
+                Nothing ->
+                    { model | clockedInPosix = Just now }
+            , addTimeEntry ( "test", 0, Nothing )
+            )
 
         SetTimeEntries timeEntries ->
             ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }, Cmd.none )
