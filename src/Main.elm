@@ -1,49 +1,37 @@
 port module Main exposing (..)
 
 import Browser
+import Data exposing (..)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
-import Employee exposing (Employee)
 import Html exposing (Html)
-import JobRole exposing (JobRole)
+import Http
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Task
 import Time exposing (Posix)
-import TimeEntry exposing (TimeEntry)
 
 
-port addTimeEntry : ( String, Int, Maybe Int ) -> Cmd msg
+
+-- port addTimeEntry : ( String, Int, Maybe Int ) -> Cmd msg
+--
+--
+-- port timeEntriesUpdated : (List ( String, Int, Maybe Int ) -> msg) -> Sub msg
 
 
-port timeEntriesUpdated : (List ( String, Int, Maybe Int ) -> msg) -> Sub msg
-
-
-port temporaryClockedInMsg : String -> Cmd msg
-
-
-white =
-    Element.rgb 1 1 1
+port showDialog : String -> Cmd msg
 
 
 grey =
-    Element.rgb 0.9 0.9 0.9
-
-
-blue =
-    Element.rgb 0 0 0.8
+    Element.rgb 0.8 0.8 0.8
 
 
 red =
     Element.rgb 0.8 0 0
-
-
-darkBlue =
-    Element.rgb 0 0 0.9
 
 
 main =
@@ -57,7 +45,11 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    timeEntriesUpdated SetTimeEntries
+    Sub.none
+
+
+
+--timeEntriesUpdated SetTimeEntries
 
 
 init : List ( String, Int, Maybe Int ) -> ( Model, Cmd Msg )
@@ -68,8 +60,19 @@ init timeEntries =
       , clockedInPosix = Nothing
       , employee = Nothing
       , timeEntries = []
+      , jobRoles = []
+      , employees = []
       }
-    , Cmd.none
+    , Cmd.batch
+        [ Http.get
+            { url = "http://localhost:3000/employees"
+            , expect = Http.expectJson GotEmployees (Decode.list decodeEmployee)
+            }
+        , Http.get
+            { url = "http://localhost:3000/jobroles"
+            , expect = Http.expectJson GotJobRoles (Decode.list decodeJobRole)
+            }
+        ]
     )
 
 
@@ -80,6 +83,8 @@ type alias Model =
     , clockedInPosix : Maybe Posix
     , employee : Maybe Employee
     , timeEntries : List TimeEntry
+    , jobRoles : List JobRole
+    , employees : List Employee
     }
 
 
@@ -89,7 +94,10 @@ type Msg
     | UpdateCashCollected String
     | ClockInClockOut
     | NewTime Time.Posix
+    | ClockedIn (Result Http.Error String)
     | SetTimeEntries (List ( String, Int, Maybe Int ))
+    | GotJobRoles (Result Http.Error (List JobRole))
+    | GotEmployees (Result Http.Error (List Employee))
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -97,7 +105,10 @@ update msg model =
     case msg of
         UpdatePin pin ->
             ( if String.length pin <= 4 then
-                { model | pin = pin }
+                { model
+                    | pin = pin
+                    , employee = List.head (List.filter (\t -> Just t.pin == String.toInt pin) model.employees)
+                }
 
               else
                 model
@@ -111,47 +122,80 @@ update msg model =
             ( { model | cashCollected = cashCollected }, Cmd.none )
 
         ClockInClockOut ->
-            ( { model | pin = "", jobRole = Nothing, cashCollected = "" }
-            , Cmd.batch
-                [ temporaryClockedInMsg "You've Clocked In successfully!"
-                , Task.perform NewTime Time.now
-                ]
-              -- , case model.clockedInPosix of
-              --     Just _ ->
-              --         Task.perform NewTime Time.now
-              --     Nothing ->
-              --         Cmd.none
+            ( model
+            , Task.perform NewTime Time.now
             )
 
         NewTime now ->
-            ( case model.clockedInPosix of
-                Just _ ->
-                    model
+            let
+                posix =
+                    case model.clockedInPosix of
+                        Just clockedInPosix ->
+                            clockedInPosix
 
-                Nothing ->
-                    { model | clockedInPosix = Just now }
-            , addTimeEntry ( "test", 0, Nothing )
+                        Nothing ->
+                            now
+            in
+            ( { model | clockedInPosix = Just posix }
+            , Cmd.batch
+                [ --addTimeEntry ( "test", 0, Nothing )
+                  Http.post
+                    { url = "http://localhost:3000/clockin"
+                    , expect = Http.expectString ClockedIn
+                    , body =
+                        Http.jsonBody <|
+                            Encode.object
+                                [ ( "pin", Encode.string model.pin )
+                                , ( "clockedInAt", Encode.int (Time.posixToMillis posix) )
+                                ]
+                    }
+                ]
             )
+
+        ClockedIn result ->
+            case result of
+                Ok _ ->
+                    ( { model | pin = "", jobRole = Nothing, cashCollected = "", employee = Nothing }
+                    , showDialog "You've Clocked In successfully!"
+                    )
+
+                Err _ ->
+                    ( { model | pin = "", jobRole = Nothing, cashCollected = "", employee = Nothing }
+                    , showDialog "Error clocking in"
+                    )
 
         SetTimeEntries timeEntries ->
             ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }, Cmd.none )
 
+        GotJobRoles result ->
+            case result of
+                Ok jobRoles ->
+                    ( { model | jobRoles = jobRoles }, Cmd.none )
 
+                Err errorMsg ->
+                    ( model, showDialog (Debug.toString errorMsg) )
 
--- ( case Decode.list (TimeEntry.timeEntryDecoder timeEntryJson) of
---     Ok timeEntries ->
---         { model | timeEntries = timeEntries }
---     Err errorMsg ->
---         Debug.todo errorMsg
--- , Cmd.none
--- )
+        GotEmployees result ->
+            case result of
+                Ok employees ->
+                    ( { model | employees = employees }
+                    , Cmd.none
+                    )
+
+                Err errorMsg ->
+                    ( model, showDialog (Debug.toString errorMsg) )
 
 
 view : Model -> Html Msg
 view model =
     let
         showSecureSection =
-            List.length (Employee.getJobRoles model.pin) > 0
+            case model.employee of
+                Just _ ->
+                    True
+
+                Nothing ->
+                    False
     in
     Element.layout
         [ Font.size 20
@@ -181,7 +225,7 @@ view model =
                         , alignRight
                         , moveDown 6
                         ]
-                        (text (pinErrorMessage model.pin))
+                        (text (pinErrorMessage model.pin showSecureSection))
                     )
                 ]
                 { text = model.pin
@@ -205,8 +249,9 @@ view model =
             ]
 
 
-pinErrorMessage pin =
-    if String.length pin == 4 && List.length (Employee.getJobRoles pin) == 0 then
+pinErrorMessage : String -> Bool -> String
+pinErrorMessage pin showSecureSection =
+    if String.length pin == 4 && not showSecureSection then
         "Invalid Pin, please contact your manager"
 
     else
@@ -224,6 +269,15 @@ showIfPin bool content =
 
 positionSelect : Model -> Element Msg
 positionSelect model =
+    let
+        jobRoles =
+            case model.employee of
+                Just employee ->
+                    getEmployeeJobRoles employee model.jobRoles
+
+                Nothing ->
+                    []
+    in
     Input.radio
         [ spacing 12
         , Font.size 24
@@ -231,7 +285,7 @@ positionSelect model =
         { selected = model.jobRole
         , onChange = UpdateJobRole
         , label = Input.labelAbove [ Font.size 14, paddingXY 0 12 ] (text "Please select a position")
-        , options = List.map toInputOption (Employee.getJobRoles model.pin)
+        , options = List.map toInputOption jobRoles
         }
 
 
@@ -272,5 +326,6 @@ clockInClockOutText clockedInPosix =
             "Clock In"
 
 
+toInputOption : JobRole -> Input.Option JobRole Msg
 toInputOption jobRole =
-    Input.option jobRole (text jobRole.description)
+    Input.option jobRole (text jobRole.name)
