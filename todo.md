@@ -1,9 +1,13 @@
 Todo Items:
 Add Validation for role selected
+Add clock to home page
+Disable clock in button
+Error message sucks for invalid pin
+default cash entered to 0
+Add a welcome message that disappears after a few seconds.
+Clean up debug stuff
+Better errors overall
+clean up ClockedIn error handling
 
-Questions Items:
-Should cash entered be a required field
-Should we display username when they clock in.
-
------------ V2
-How do I check if I am already clocked in?
+--
+Separate app for managing admin stuff, like employee data, roles, that kinda thing

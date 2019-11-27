@@ -1,6 +1,8 @@
 port module Main exposing (..)
 
 import Browser
+import Clock
+import Config exposing (errorToString)
 import Data exposing (..)
 import Element exposing (..)
 import Element.Background as Background
@@ -153,19 +155,22 @@ update msg model =
             )
 
         ClockedIn result ->
+            -- Todo: This fails in so many ways, it says stuff before network returns, then shows error. Really fails poorly
             case result of
                 Ok _ ->
                     ( { model | pin = "", jobRole = Nothing, cashCollected = "", employee = Nothing }
                     , showDialog "You've Clocked In successfully!"
                     )
 
-                Err _ ->
+                Err err ->
                     ( { model | pin = "", jobRole = Nothing, cashCollected = "", employee = Nothing }
-                    , showDialog "Error clocking in"
+                    , showDialog (errorToString err)
                     )
 
         SetTimeEntries timeEntries ->
-            ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }, Cmd.none )
+            ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }
+            , Cmd.none
+            )
 
         GotJobRoles result ->
             case result of
@@ -173,7 +178,7 @@ update msg model =
                     ( { model | jobRoles = jobRoles }, Cmd.none )
 
                 Err errorMsg ->
-                    ( model, showDialog (Debug.toString errorMsg) )
+                    ( model, showDialog (errorToString errorMsg) )
 
         GotEmployees result ->
             case result of
@@ -183,7 +188,7 @@ update msg model =
                     )
 
                 Err errorMsg ->
-                    ( model, showDialog (Debug.toString errorMsg) )
+                    ( model, showDialog (errorToString errorMsg) )
 
 
 view : Model -> Html Msg
@@ -252,7 +257,7 @@ view model =
 pinErrorMessage : String -> Bool -> String
 pinErrorMessage pin showSecureSection =
     if String.length pin == 4 && not showSecureSection then
-        "Invalid Pin, please contact your manager"
+        Config.errorConstant_InvalidPin
 
     else
         ""
@@ -295,7 +300,7 @@ cashInput model =
         [ spacing 12
         ]
         { text = model.cashCollected
-        , placeholder = Just (Input.placeholder [] (text "Please enter, cash collected"))
+        , placeholder = Just (Input.placeholder [] (text "Please enter cash collected"))
         , onChange = UpdateCashCollected
         , label = Input.labelAbove [ Font.size 14 ] (text "Cash Collected")
         }
