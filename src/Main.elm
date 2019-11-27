@@ -50,10 +50,6 @@ subscriptions _ =
     Sub.none
 
 
-
---timeEntriesUpdated SetTimeEntries
-
-
 init : List ( String, Int, Maybe Int ) -> ( Model, Cmd Msg )
 init timeEntries =
     ( { pin = ""
@@ -97,7 +93,6 @@ type Msg
     | ClockInClockOut
     | NewTime Time.Posix
     | ClockedIn (Result Http.Error String)
-    | SetTimeEntries (List ( String, Int, Maybe Int ))
     | GotJobRoles (Result Http.Error (List JobRole))
     | GotEmployees (Result Http.Error (List Employee))
 
@@ -167,11 +162,6 @@ update msg model =
                     , showDialog (errorToString err)
                     )
 
-        SetTimeEntries timeEntries ->
-            ( { model | timeEntries = List.map (\( pin, start, end ) -> TimeEntry pin start end) timeEntries }
-            , Cmd.none
-            )
-
         GotJobRoles result ->
             case result of
                 Ok jobRoles ->
@@ -220,25 +210,7 @@ view model =
                 , Font.size 36
                 ]
                 (text "Time Card Entry")
-            , Input.currentPassword
-                [ spacing 12
-                , width shrink
-                , below
-                    (el
-                        [ Font.color red
-                        , Font.size 14
-                        , alignRight
-                        , moveDown 6
-                        ]
-                        (text (pinErrorMessage model.pin showSecureSection))
-                    )
-                ]
-                { text = model.pin
-                , placeholder = Nothing
-                , onChange = UpdatePin
-                , label = Input.labelAbove [ Font.size 14 ] (text "Please enter 4 digit PIN Number")
-                , show = False
-                }
+            , viewCurrentPassword model.pin showSecureSection
             , showIfPin showSecureSection (positionSelect model)
             , case model.jobRole of
                 Just jobRole ->
@@ -252,6 +224,28 @@ view model =
                     el [ paddingXY 0 12, height (px 72) ] (text "")
             , showIfPin showSecureSection (clockInOutButton model)
             ]
+
+
+viewCurrentPassword pin showSecureSection =
+    Input.currentPassword
+        [ spacing 12
+        , width shrink
+        , below
+            (el
+                [ Font.color red
+                , Font.size 14
+                , alignRight
+                , moveDown 6
+                ]
+                (text (pinErrorMessage pin showSecureSection))
+            )
+        ]
+        { text = pin
+        , placeholder = Nothing
+        , onChange = UpdatePin
+        , label = Input.labelAbove [ Font.size 14 ] (text "Please enter 4 digit PIN Number")
+        , show = False
+        }
 
 
 pinErrorMessage : String -> Bool -> String

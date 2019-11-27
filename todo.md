@@ -9,5 +9,8 @@ Clean up debug stuff
 Better errors overall
 clean up ClockedIn error handling
 
+Low Priority:
+install elmjutsu
+
 --
 Separate app for managing admin stuff, like employee data, roles, that kinda thing

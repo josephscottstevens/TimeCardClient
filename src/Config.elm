@@ -1,6 +1,6 @@
-module Config exposing (errorConstant_InvalidPin)
+module Config exposing (errorConstant_InvalidPin, errorToString)
 
-import Http exposing (Error)
+import Http exposing (Error(..))
 
 
 errorConstant_InvalidPin : String
@@ -14,14 +14,14 @@ errorToString error =
         BadUrl url ->
             "Error, invalid url: " ++ url
 
-        TimeOut ->
+        Timeout ->
             "Error, trouble connecting to the internet"
 
         NetworkError ->
             "Error, an unknown network error has occured, please try again later"
 
         BadStatus statusInt ->
-            "Error, bad status of: " ++ Int.toString statusInt
+            "Error, bad status of: " ++ String.fromInt statusInt
 
         BadBody body ->
             "Error, bad body of: " ++ body

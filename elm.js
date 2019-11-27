@@ -6220,10 +6220,23 @@ var $author$project$Main$ClockedIn = function (a) {
 var $author$project$Main$NewTime = function (a) {
 	return {$: 'NewTime', a: a};
 };
-var $author$project$Data$TimeEntry = F3(
-	function (pin, clockedInAt, clockedOutAt) {
-		return {clockedInAt: clockedInAt, clockedOutAt: clockedOutAt, pin: pin};
-	});
+var $author$project$Config$errorToString = function (error) {
+	switch (error.$) {
+		case 'BadUrl':
+			var url = error.a;
+			return 'Error, invalid url: ' + url;
+		case 'Timeout':
+			return 'Error, trouble connecting to the internet';
+		case 'NetworkError':
+			return 'Error, an unknown network error has occured, please try again later';
+		case 'BadStatus':
+			var statusInt = error.a;
+			return 'Error, bad status of: ' + $elm$core$String$fromInt(statusInt);
+		default:
+			var body = error.a;
+			return 'Error, bad body of: ' + body;
+	}
+};
 var $elm$http$Http$expectString = function (toMsg) {
 	return A2(
 		$elm$http$Http$expectStringResponse,
@@ -6297,7 +6310,6 @@ var $elm$http$Http$post = function (r) {
 };
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $author$project$Main$showDialog = _Platform_outgoingPort('showDialog', $elm$json$Json$Encode$string);
-var $elm$core$Debug$toString = _Debug_toString;
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
@@ -6386,29 +6398,14 @@ var $author$project$Main$update = F2(
 							{cashCollected: '', employee: $elm$core$Maybe$Nothing, jobRole: $elm$core$Maybe$Nothing, pin: ''}),
 						$author$project$Main$showDialog('You\'ve Clocked In successfully!'));
 				} else {
+					var err = result.a;
 					return _Utils_Tuple2(
 						_Utils_update(
 							model,
 							{cashCollected: '', employee: $elm$core$Maybe$Nothing, jobRole: $elm$core$Maybe$Nothing, pin: ''}),
-						$author$project$Main$showDialog('Error clocking in'));
+						$author$project$Main$showDialog(
+							$author$project$Config$errorToString(err)));
 				}
-			case 'SetTimeEntries':
-				var timeEntries = msg.a;
-				return _Utils_Tuple2(
-					_Utils_update(
-						model,
-						{
-							timeEntries: A2(
-								$elm$core$List$map,
-								function (_v3) {
-									var pin = _v3.a;
-									var start = _v3.b;
-									var end = _v3.c;
-									return A3($author$project$Data$TimeEntry, pin, start, end);
-								},
-								timeEntries)
-						}),
-					$elm$core$Platform$Cmd$none);
 			case 'GotJobRoles':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
@@ -6423,7 +6420,7 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						model,
 						$author$project$Main$showDialog(
-							$elm$core$Debug$toString(errorMsg)));
+							$author$project$Config$errorToString(errorMsg)));
 				}
 			default:
 				var result = msg.a;
@@ -6439,42 +6436,20 @@ var $author$project$Main$update = F2(
 					return _Utils_Tuple2(
 						model,
 						$author$project$Main$showDialog(
-							$elm$core$Debug$toString(errorMsg)));
+							$author$project$Config$errorToString(errorMsg)));
 				}
 		}
 	});
-var $author$project$Main$UpdatePin = function (a) {
-	return {$: 'UpdatePin', a: a};
-};
 var $mdgriffith$elm_ui$Internal$Model$AlignX = function (a) {
 	return {$: 'AlignX', a: a};
 };
 var $mdgriffith$elm_ui$Internal$Model$Left = {$: 'Left'};
 var $mdgriffith$elm_ui$Element$alignLeft = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Left);
-var $mdgriffith$elm_ui$Internal$Model$Right = {$: 'Right'};
-var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Right);
 var $mdgriffith$elm_ui$Internal$Model$AlignY = function (a) {
 	return {$: 'AlignY', a: a};
 };
 var $mdgriffith$elm_ui$Internal$Model$Top = {$: 'Top'};
 var $mdgriffith$elm_ui$Element$alignTop = $mdgriffith$elm_ui$Internal$Model$AlignY($mdgriffith$elm_ui$Internal$Model$Top);
-var $mdgriffith$elm_ui$Internal$Model$Below = {$: 'Below'};
-var $mdgriffith$elm_ui$Internal$Model$Nearby = F2(
-	function (a, b) {
-		return {$: 'Nearby', a: a, b: b};
-	});
-var $mdgriffith$elm_ui$Internal$Model$NoAttribute = {$: 'NoAttribute'};
-var $mdgriffith$elm_ui$Element$createNearby = F2(
-	function (loc, element) {
-		if (element.$ === 'Empty') {
-			return $mdgriffith$elm_ui$Internal$Model$NoAttribute;
-		} else {
-			return A2($mdgriffith$elm_ui$Internal$Model$Nearby, loc, element);
-		}
-	});
-var $mdgriffith$elm_ui$Element$below = function (element) {
-	return A2($mdgriffith$elm_ui$Element$createNearby, $mdgriffith$elm_ui$Internal$Model$Below, element);
-};
 var $author$project$Main$UpdateCashCollected = function (a) {
 	return {$: 'UpdateCashCollected', a: a};
 };
@@ -6548,6 +6523,7 @@ var $mdgriffith$elm_ui$Internal$Model$Class = F2(
 	function (a, b) {
 		return {$: 'Class', a: a, b: b};
 	});
+var $mdgriffith$elm_ui$Internal$Model$NoAttribute = {$: 'NoAttribute'};
 var $mdgriffith$elm_ui$Internal$Model$NodeName = function (a) {
 	return {$: 'NodeName', a: a};
 };
@@ -11979,6 +11955,18 @@ var $mdgriffith$elm_ui$Element$Input$autofill = A2(
 	$mdgriffith$elm_ui$Internal$Model$Attr,
 	$elm$html$Html$Attributes$attribute('autocomplete'));
 var $mdgriffith$elm_ui$Internal$Model$Behind = {$: 'Behind'};
+var $mdgriffith$elm_ui$Internal$Model$Nearby = F2(
+	function (a, b) {
+		return {$: 'Nearby', a: a, b: b};
+	});
+var $mdgriffith$elm_ui$Element$createNearby = F2(
+	function (loc, element) {
+		if (element.$ === 'Empty') {
+			return $mdgriffith$elm_ui$Internal$Model$NoAttribute;
+		} else {
+			return A2($mdgriffith$elm_ui$Internal$Model$Nearby, loc, element);
+		}
+	});
 var $mdgriffith$elm_ui$Element$behindContent = function (element) {
 	return A2($mdgriffith$elm_ui$Element$createNearby, $mdgriffith$elm_ui$Internal$Model$Behind, element);
 };
@@ -12917,7 +12905,7 @@ var $author$project$Main$cashInput = function (model) {
 				A2(
 					$mdgriffith$elm_ui$Element$Input$placeholder,
 					_List_Nil,
-					$mdgriffith$elm_ui$Element$text('Please enter, cash collected'))),
+					$mdgriffith$elm_ui$Element$text('Please enter cash collected'))),
 			text: model.cashCollected
 		});
 };
@@ -13090,19 +13078,6 @@ var $mdgriffith$elm_ui$Element$column = F2(
 						$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
 						attrs))),
 			$mdgriffith$elm_ui$Internal$Model$Unkeyed(children));
-	});
-var $mdgriffith$elm_ui$Element$Input$currentPassword = F2(
-	function (attrs, pass) {
-		return A3(
-			$mdgriffith$elm_ui$Element$Input$textHelper,
-			{
-				autofill: $elm$core$Maybe$Just('current-password'),
-				spellchecked: false,
-				type_: $mdgriffith$elm_ui$Element$Input$TextInputNode(
-					pass.show ? 'text' : 'password')
-			},
-			attrs,
-			{label: pass.label, onChange: pass.onChange, placeholder: pass.placeholder, text: pass.text});
 	});
 var $mdgriffith$elm_ui$Internal$Model$Heading = function (a) {
 	return {$: 'Heading', a: a};
@@ -13360,16 +13335,6 @@ var $mdgriffith$elm_ui$Element$layoutWith = F3(
 	});
 var $mdgriffith$elm_ui$Element$layout = $mdgriffith$elm_ui$Element$layoutWith(
 	{options: _List_Nil});
-var $mdgriffith$elm_ui$Element$moveDown = function (y) {
-	return A2(
-		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
-		$mdgriffith$elm_ui$Internal$Flag$moveY,
-		$mdgriffith$elm_ui$Internal$Model$MoveY(y));
-};
-var $author$project$Main$pinErrorMessage = F2(
-	function (pin, showSecureSection) {
-		return (($elm$core$String$length(pin) === 4) && (!showSecureSection)) ? 'Invalid Pin, please contact your manager' : '';
-	});
 var $author$project$Main$UpdateJobRole = function (a) {
 	return {$: 'UpdateJobRole', a: a};
 };
@@ -13844,10 +13809,78 @@ var $author$project$Main$positionSelect = function (model) {
 			selected: model.jobRole
 		});
 };
-var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0, 0);
 var $author$project$Main$showIfPin = F2(
 	function (bool, content) {
 		return bool ? content : $mdgriffith$elm_ui$Element$none;
+	});
+var $author$project$Main$UpdatePin = function (a) {
+	return {$: 'UpdatePin', a: a};
+};
+var $mdgriffith$elm_ui$Internal$Model$Right = {$: 'Right'};
+var $mdgriffith$elm_ui$Element$alignRight = $mdgriffith$elm_ui$Internal$Model$AlignX($mdgriffith$elm_ui$Internal$Model$Right);
+var $mdgriffith$elm_ui$Internal$Model$Below = {$: 'Below'};
+var $mdgriffith$elm_ui$Element$below = function (element) {
+	return A2($mdgriffith$elm_ui$Element$createNearby, $mdgriffith$elm_ui$Internal$Model$Below, element);
+};
+var $mdgriffith$elm_ui$Element$Input$currentPassword = F2(
+	function (attrs, pass) {
+		return A3(
+			$mdgriffith$elm_ui$Element$Input$textHelper,
+			{
+				autofill: $elm$core$Maybe$Just('current-password'),
+				spellchecked: false,
+				type_: $mdgriffith$elm_ui$Element$Input$TextInputNode(
+					pass.show ? 'text' : 'password')
+			},
+			attrs,
+			{label: pass.label, onChange: pass.onChange, placeholder: pass.placeholder, text: pass.text});
+	});
+var $mdgriffith$elm_ui$Element$moveDown = function (y) {
+	return A2(
+		$mdgriffith$elm_ui$Internal$Model$TransformComponent,
+		$mdgriffith$elm_ui$Internal$Flag$moveY,
+		$mdgriffith$elm_ui$Internal$Model$MoveY(y));
+};
+var $author$project$Config$errorConstant_InvalidPin = 'no user associated with pin, please again, or contact your manager if you don\'t have a pin set up';
+var $author$project$Main$pinErrorMessage = F2(
+	function (pin, showSecureSection) {
+		return (($elm$core$String$length(pin) === 4) && (!showSecureSection)) ? $author$project$Config$errorConstant_InvalidPin : '';
+	});
+var $author$project$Main$red = A3($mdgriffith$elm_ui$Element$rgb, 0.8, 0, 0);
+var $author$project$Main$viewCurrentPassword = F2(
+	function (pin, showSecureSection) {
+		return A2(
+			$mdgriffith$elm_ui$Element$Input$currentPassword,
+			_List_fromArray(
+				[
+					$mdgriffith$elm_ui$Element$spacing(12),
+					$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
+					$mdgriffith$elm_ui$Element$below(
+					A2(
+						$mdgriffith$elm_ui$Element$el,
+						_List_fromArray(
+							[
+								$mdgriffith$elm_ui$Element$Font$color($author$project$Main$red),
+								$mdgriffith$elm_ui$Element$Font$size(14),
+								$mdgriffith$elm_ui$Element$alignRight,
+								$mdgriffith$elm_ui$Element$moveDown(6)
+							]),
+						$mdgriffith$elm_ui$Element$text(
+							A2($author$project$Main$pinErrorMessage, pin, showSecureSection))))
+				]),
+			{
+				label: A2(
+					$mdgriffith$elm_ui$Element$Input$labelAbove,
+					_List_fromArray(
+						[
+							$mdgriffith$elm_ui$Element$Font$size(14)
+						]),
+					$mdgriffith$elm_ui$Element$text('Please enter 4 digit PIN Number')),
+				onChange: $author$project$Main$UpdatePin,
+				placeholder: $elm$core$Maybe$Nothing,
+				show: false,
+				text: pin
+			});
 	});
 var $author$project$Main$view = function (model) {
 	var showSecureSection = function () {
@@ -13888,38 +13921,7 @@ var $author$project$Main$view = function (model) {
 							$mdgriffith$elm_ui$Element$Font$size(36)
 						]),
 					$mdgriffith$elm_ui$Element$text('Time Card Entry')),
-					A2(
-					$mdgriffith$elm_ui$Element$Input$currentPassword,
-					_List_fromArray(
-						[
-							$mdgriffith$elm_ui$Element$spacing(12),
-							$mdgriffith$elm_ui$Element$width($mdgriffith$elm_ui$Element$shrink),
-							$mdgriffith$elm_ui$Element$below(
-							A2(
-								$mdgriffith$elm_ui$Element$el,
-								_List_fromArray(
-									[
-										$mdgriffith$elm_ui$Element$Font$color($author$project$Main$red),
-										$mdgriffith$elm_ui$Element$Font$size(14),
-										$mdgriffith$elm_ui$Element$alignRight,
-										$mdgriffith$elm_ui$Element$moveDown(6)
-									]),
-								$mdgriffith$elm_ui$Element$text(
-									A2($author$project$Main$pinErrorMessage, model.pin, showSecureSection))))
-						]),
-					{
-						label: A2(
-							$mdgriffith$elm_ui$Element$Input$labelAbove,
-							_List_fromArray(
-								[
-									$mdgriffith$elm_ui$Element$Font$size(14)
-								]),
-							$mdgriffith$elm_ui$Element$text('Please enter 4 digit PIN Number')),
-						onChange: $author$project$Main$UpdatePin,
-						placeholder: $elm$core$Maybe$Nothing,
-						show: false,
-						text: model.pin
-					}),
+					A2($author$project$Main$viewCurrentPassword, model.pin, showSecureSection),
 					A2(
 					$author$project$Main$showIfPin,
 					showSecureSection,
