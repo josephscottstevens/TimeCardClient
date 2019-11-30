@@ -1,9 +1,8 @@
 module Clock exposing (view)
 
 import Html exposing (Html, div)
-import Html.Attributes exposing (attribute)
 import Svg exposing (circle, g, line, svg)
-import Svg.Attributes exposing (viewBox, width, x1, x2, y1, y2)
+import Svg.Attributes exposing (..)
 import Time
 
 
@@ -19,17 +18,20 @@ view zone time =
         second =
             toFloat (Time.toSecond zone time)
     in
-    div [ attribute "style" "background: #dedede;" ]
+    div []
         [ svg
-            [ attribute "style" "fill: white; stroke: black; stroke-width: 1; stroke-linecap: round;"
+            [ fill "white"
+            , stroke "black"
+            , strokeWidth "1"
+            , strokeLinecap "round"
             , width "400px"
-            , viewBox "0 0 40 40"
+            , viewBox "0 0 400 400"
             ]
             [ circle
-                [ attribute "cx" "20", attribute "cy" "20", attribute "r" "19" ]
+                [ cx "200", cy "200", r "190" ]
                 []
             , g
-                [ attribute "style" "transform: translate(20px, 20px); stroke-width: 0.2;" ]
+                []
                 [ clockTickMark 30
                 , clockTickMark 60
                 , clockTickMark 90
@@ -43,41 +45,23 @@ view zone time =
                 , clockTickMark 330
                 , clockTickMark 360
                 ]
-            , viewHand Hour 6 60 (hour / 12)
-            , minuteHand
-            , secondHand
+            , viewHand "black" 10 90 (hour / 12)
+            , viewHand "black" 6 130 (minute / 60)
+            , viewHand "#d00505" 3 160 (second / 60)
             , circle
-                [ attribute "cx" "20"
-                , attribute "cy" "20"
-                , attribute "r" "0.7"
-                , attribute "style" "stroke: #d00505; stroke-width: 0.2;"
+                [ cx "200"
+                , cy "200"
+                , r "7"
+                , strokeWidth "2"
+                , stroke "#d00505"
                 ]
                 []
             ]
         ]
 
 
-type Hand
-    = Hour
-    | Minute
-    | Second
-
-
-formatHand : Hand -> String
-formatHand hand =
-    case hand of
-        Hour ->
-            "stroke-width: 1;"
-
-        Minute ->
-            "stroke-width: 0.6;"
-
-        Second ->
-            "stroke-width: 0.3; stroke: #d00505;"
-
-
-viewHand : Hand -> Int -> Float -> Float -> Html msg
-viewHand hand width length turns =
+viewHand : String -> Int -> Float -> Float -> Html msg
+viewHand strokeColor width length turns =
     let
         t =
             2 * pi * (turns - 0.25)
@@ -87,40 +71,14 @@ viewHand hand width length turns =
 
         y =
             200 + length * sin t
-
-        handStyle =
-            formatHand hand
     in
     line
-        [ attribute "style" "transform: translate(20px, 20px) rotate(0deg); stroke-width: 1;"
-        , x1 "0"
-        , x2 "9"
-        , y1 "0"
-        , y2 "0"
-        ]
-        []
-
-
-minuteHand : Html msg
-minuteHand =
-    line
-        [ attribute "style" "transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.6;"
-        , x1 "0"
-        , x2 "13"
-        , y1 "0"
-        , y2 "0"
-        ]
-        []
-
-
-secondHand : Html msg
-secondHand =
-    line
-        [ attribute "style" "transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.3; stroke: #d00505;"
-        , x1 "0"
-        , x2 "16"
-        , y1 "0"
-        , y2 "0"
+        [ strokeWidth (String.fromInt width)
+        , stroke strokeColor
+        , x1 "200"
+        , y1 "200"
+        , x2 (String.fromFloat x)
+        , y2 (String.fromFloat y)
         ]
         []
 
@@ -128,18 +86,18 @@ secondHand =
 clockTickMark : Int -> Html msg
 clockTickMark angle =
     let
-        strokeWidth =
-            if modBy 90 angle == 0 then
-                "stroke-width: 0.5;"
-
-            else
-                ""
+        t =
+            2 * pi * ((toFloat angle / 360) - 0.25)
     in
     line
-        [ attribute "style" ("transform: rotate(" ++ String.fromInt angle ++ "deg); " ++ strokeWidth)
-        , x1 "15"
-        , x2 "16"
-        , y1 "0"
-        , y2 "0"
+        [ if modBy 90 angle == 0 then
+            strokeWidth "5"
+
+          else
+            strokeWidth "2"
+        , x1 (String.fromFloat (200 + 150 * cos t))
+        , y1 (String.fromFloat (200 + 150 * sin t))
+        , x2 (String.fromFloat (200 + 160 * cos t))
+        , y2 (String.fromFloat (200 + 160 * sin t))
         ]
         []

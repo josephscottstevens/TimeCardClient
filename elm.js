@@ -14096,55 +14096,47 @@ var $author$project$Main$showIfPin = F2(
 	function (bool, content) {
 		return bool ? content : $mdgriffith$elm_ui$Element$none;
 	});
-var $author$project$Clock$Hour = {$: 'Hour'};
 var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
 var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
+var $elm$core$Basics$cos = _Basics_cos;
 var $elm$svg$Svg$line = $elm$svg$Svg$trustedNode('line');
 var $elm$core$Basics$modBy = _Basics_modBy;
+var $elm$core$Basics$pi = _Basics_pi;
+var $elm$core$Basics$sin = _Basics_sin;
+var $elm$svg$Svg$Attributes$strokeWidth = _VirtualDom_attribute('stroke-width');
 var $elm$svg$Svg$Attributes$x1 = _VirtualDom_attribute('x1');
 var $elm$svg$Svg$Attributes$x2 = _VirtualDom_attribute('x2');
 var $elm$svg$Svg$Attributes$y1 = _VirtualDom_attribute('y1');
 var $elm$svg$Svg$Attributes$y2 = _VirtualDom_attribute('y2');
 var $author$project$Clock$clockTickMark = function (angle) {
-	var strokeWidth = (!A2($elm$core$Basics$modBy, 90, angle)) ? 'stroke-width: 0.5;' : '';
+	var t = (2 * $elm$core$Basics$pi) * ((angle / 360) - 0.25);
 	return A2(
 		$elm$svg$Svg$line,
 		_List_fromArray(
 			[
-				A2(
-				$elm$html$Html$Attributes$attribute,
-				'style',
-				'transform: rotate(' + ($elm$core$String$fromInt(angle) + ('deg); ' + strokeWidth))),
-				$elm$svg$Svg$Attributes$x1('15'),
-				$elm$svg$Svg$Attributes$x2('16'),
-				$elm$svg$Svg$Attributes$y1('0'),
-				$elm$svg$Svg$Attributes$y2('0')
+				(!A2($elm$core$Basics$modBy, 90, angle)) ? $elm$svg$Svg$Attributes$strokeWidth('5') : $elm$svg$Svg$Attributes$strokeWidth('2'),
+				$elm$svg$Svg$Attributes$x1(
+				$elm$core$String$fromFloat(
+					200 + (150 * $elm$core$Basics$cos(t)))),
+				$elm$svg$Svg$Attributes$y1(
+				$elm$core$String$fromFloat(
+					200 + (150 * $elm$core$Basics$sin(t)))),
+				$elm$svg$Svg$Attributes$x2(
+				$elm$core$String$fromFloat(
+					200 + (160 * $elm$core$Basics$cos(t)))),
+				$elm$svg$Svg$Attributes$y2(
+				$elm$core$String$fromFloat(
+					200 + (160 * $elm$core$Basics$sin(t))))
 			]),
 		_List_Nil);
 };
+var $elm$svg$Svg$Attributes$cx = _VirtualDom_attribute('cx');
+var $elm$svg$Svg$Attributes$cy = _VirtualDom_attribute('cy');
+var $elm$svg$Svg$Attributes$fill = _VirtualDom_attribute('fill');
 var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
-var $author$project$Clock$minuteHand = A2(
-	$elm$svg$Svg$line,
-	_List_fromArray(
-		[
-			A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.6;'),
-			$elm$svg$Svg$Attributes$x1('0'),
-			$elm$svg$Svg$Attributes$x2('13'),
-			$elm$svg$Svg$Attributes$y1('0'),
-			$elm$svg$Svg$Attributes$y2('0')
-		]),
-	_List_Nil);
-var $author$project$Clock$secondHand = A2(
-	$elm$svg$Svg$line,
-	_List_fromArray(
-		[
-			A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.3; stroke: #d00505;'),
-			$elm$svg$Svg$Attributes$x1('0'),
-			$elm$svg$Svg$Attributes$x2('16'),
-			$elm$svg$Svg$Attributes$y1('0'),
-			$elm$svg$Svg$Attributes$y2('0')
-		]),
-	_List_Nil);
+var $elm$svg$Svg$Attributes$r = _VirtualDom_attribute('r');
+var $elm$svg$Svg$Attributes$stroke = _VirtualDom_attribute('stroke');
+var $elm$svg$Svg$Attributes$strokeLinecap = _VirtualDom_attribute('stroke-linecap');
 var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
 var $elm$time$Time$flooredDiv = F2(
 	function (numerator, denominator) {
@@ -14214,34 +14206,24 @@ var $elm$time$Time$toSecond = F2(
 				1000));
 	});
 var $elm$svg$Svg$Attributes$viewBox = _VirtualDom_attribute('viewBox');
-var $elm$core$Basics$cos = _Basics_cos;
-var $author$project$Clock$formatHand = function (hand) {
-	switch (hand.$) {
-		case 'Hour':
-			return 'stroke-width: 1;';
-		case 'Minute':
-			return 'stroke-width: 0.6;';
-		default:
-			return 'stroke-width: 0.3; stroke: #d00505;';
-	}
-};
-var $elm$core$Basics$pi = _Basics_pi;
-var $elm$core$Basics$sin = _Basics_sin;
 var $author$project$Clock$viewHand = F4(
-	function (hand, width, length, turns) {
+	function (strokeColor, width, length, turns) {
 		var t = (2 * $elm$core$Basics$pi) * (turns - 0.25);
 		var x = 200 + (length * $elm$core$Basics$cos(t));
 		var y = 200 + (length * $elm$core$Basics$sin(t));
-		var handStyle = $author$project$Clock$formatHand(hand);
 		return A2(
 			$elm$svg$Svg$line,
 			_List_fromArray(
 				[
-					A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 1;'),
-					$elm$svg$Svg$Attributes$x1('0'),
-					$elm$svg$Svg$Attributes$x2('9'),
-					$elm$svg$Svg$Attributes$y1('0'),
-					$elm$svg$Svg$Attributes$y2('0')
+					$elm$svg$Svg$Attributes$strokeWidth(
+					$elm$core$String$fromInt(width)),
+					$elm$svg$Svg$Attributes$stroke(strokeColor),
+					$elm$svg$Svg$Attributes$x1('200'),
+					$elm$svg$Svg$Attributes$y1('200'),
+					$elm$svg$Svg$Attributes$x2(
+					$elm$core$String$fromFloat(x)),
+					$elm$svg$Svg$Attributes$y2(
+					$elm$core$String$fromFloat(y))
 				]),
 			_List_Nil);
 	});
@@ -14253,19 +14235,19 @@ var $author$project$Clock$view = F2(
 		var hour = A2($elm$time$Time$toHour, zone, time);
 		return A2(
 			$elm$html$Html$div,
-			_List_fromArray(
-				[
-					A2($elm$html$Html$Attributes$attribute, 'style', 'background: #dedede;')
-				]),
+			_List_Nil,
 			_List_fromArray(
 				[
 					A2(
 					$elm$svg$Svg$svg,
 					_List_fromArray(
 						[
-							A2($elm$html$Html$Attributes$attribute, 'style', 'fill: white; stroke: black; stroke-width: 1; stroke-linecap: round;'),
+							$elm$svg$Svg$Attributes$fill('white'),
+							$elm$svg$Svg$Attributes$stroke('black'),
+							$elm$svg$Svg$Attributes$strokeWidth('1'),
+							$elm$svg$Svg$Attributes$strokeLinecap('round'),
 							$elm$svg$Svg$Attributes$width('400px'),
-							$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+							$elm$svg$Svg$Attributes$viewBox('0 0 400 400')
 						]),
 					_List_fromArray(
 						[
@@ -14273,17 +14255,14 @@ var $author$project$Clock$view = F2(
 							$elm$svg$Svg$circle,
 							_List_fromArray(
 								[
-									A2($elm$html$Html$Attributes$attribute, 'cx', '20'),
-									A2($elm$html$Html$Attributes$attribute, 'cy', '20'),
-									A2($elm$html$Html$Attributes$attribute, 'r', '19')
+									$elm$svg$Svg$Attributes$cx('200'),
+									$elm$svg$Svg$Attributes$cy('200'),
+									$elm$svg$Svg$Attributes$r('190')
 								]),
 							_List_Nil),
 							A2(
 							$elm$svg$Svg$g,
-							_List_fromArray(
-								[
-									A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px); stroke-width: 0.2;')
-								]),
+							_List_Nil,
 							_List_fromArray(
 								[
 									$author$project$Clock$clockTickMark(30),
@@ -14299,17 +14278,18 @@ var $author$project$Clock$view = F2(
 									$author$project$Clock$clockTickMark(330),
 									$author$project$Clock$clockTickMark(360)
 								])),
-							A4($author$project$Clock$viewHand, $author$project$Clock$Hour, 6, 60, hour / 12),
-							$author$project$Clock$minuteHand,
-							$author$project$Clock$secondHand,
+							A4($author$project$Clock$viewHand, 'black', 10, 90, hour / 12),
+							A4($author$project$Clock$viewHand, 'black', 6, 130, minute / 60),
+							A4($author$project$Clock$viewHand, '#d00505', 3, 160, second / 60),
 							A2(
 							$elm$svg$Svg$circle,
 							_List_fromArray(
 								[
-									A2($elm$html$Html$Attributes$attribute, 'cx', '20'),
-									A2($elm$html$Html$Attributes$attribute, 'cy', '20'),
-									A2($elm$html$Html$Attributes$attribute, 'r', '0.7'),
-									A2($elm$html$Html$Attributes$attribute, 'style', 'stroke: #d00505; stroke-width: 0.2;')
+									$elm$svg$Svg$Attributes$cx('200'),
+									$elm$svg$Svg$Attributes$cy('200'),
+									$elm$svg$Svg$Attributes$r('7'),
+									$elm$svg$Svg$Attributes$strokeWidth('2'),
+									$elm$svg$Svg$Attributes$stroke('#d00505')
 								]),
 							_List_Nil)
 						]))
