@@ -5359,11 +5359,17 @@ var $elm$core$Task$perform = F2(
 	});
 var $elm$browser$Browser$element = _Browser_element;
 var $elm$json$Json$Decode$index = _Json_decodeIndex;
+var $author$project$Main$AdjustTimeZone = function (a) {
+	return {$: 'AdjustTimeZone', a: a};
+};
 var $author$project$Main$GotEmployees = function (a) {
 	return {$: 'GotEmployees', a: a};
 };
 var $author$project$Main$GotJobRoles = function (a) {
 	return {$: 'GotJobRoles', a: a};
+};
+var $author$project$Main$Tick = function (a) {
+	return {$: 'Tick', a: a};
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $author$project$Data$Employee = F5(
@@ -6183,9 +6189,38 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
+var $elm$time$Time$Name = function (a) {
+	return {$: 'Name', a: a};
+};
+var $elm$time$Time$Offset = function (a) {
+	return {$: 'Offset', a: a};
+};
+var $elm$time$Time$Zone = F2(
+	function (a, b) {
+		return {$: 'Zone', a: a, b: b};
+	});
+var $elm$time$Time$customZone = $elm$time$Time$Zone;
+var $elm$time$Time$here = _Time_here(_Utils_Tuple0);
+var $elm$time$Time$Posix = function (a) {
+	return {$: 'Posix', a: a};
+};
+var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
+var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
+var $elm$time$Time$utc = A2($elm$time$Time$Zone, 0, _List_Nil);
 var $author$project$Main$init = function (timeEntries) {
 	return _Utils_Tuple2(
-		{cashCollected: '', clockedInPosix: $elm$core$Maybe$Nothing, employee: $elm$core$Maybe$Nothing, employees: _List_Nil, jobRole: $elm$core$Maybe$Nothing, jobRoles: _List_Nil, pin: '', timeEntries: _List_Nil},
+		{
+			cashCollected: '',
+			clockedInPosix: $elm$core$Maybe$Nothing,
+			employee: $elm$core$Maybe$Nothing,
+			employees: _List_Nil,
+			jobRole: $elm$core$Maybe$Nothing,
+			jobRoles: _List_Nil,
+			pin: '',
+			time: $elm$time$Time$millisToPosix(0),
+			timeEntries: _List_Nil,
+			zone: $elm$time$Time$utc
+		},
 		$elm$core$Platform$Cmd$batch(
 			_List_fromArray(
 				[
@@ -6204,15 +6239,269 @@ var $author$project$Main$init = function (timeEntries) {
 							$author$project$Main$GotJobRoles,
 							$elm$json$Json$Decode$list($author$project$Data$decodeJobRole)),
 						url: 'http://localhost:3000/jobroles'
-					})
+					}),
+					A2($elm$core$Task$perform, $author$project$Main$AdjustTimeZone, $elm$time$Time$here),
+					A2($elm$core$Task$perform, $author$project$Main$Tick, $elm$time$Time$now)
 				])));
 };
 var $elm$json$Json$Decode$null = _Json_decodeNull;
 var $elm$json$Json$Decode$oneOf = _Json_oneOf;
-var $elm$core$Platform$Sub$batch = _Platform_batch;
-var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$time$Time$Every = F2(
+	function (a, b) {
+		return {$: 'Every', a: a, b: b};
+	});
+var $elm$time$Time$State = F2(
+	function (taggers, processes) {
+		return {processes: processes, taggers: taggers};
+	});
+var $elm$time$Time$init = $elm$core$Task$succeed(
+	A2($elm$time$Time$State, $elm$core$Dict$empty, $elm$core$Dict$empty));
+var $elm$time$Time$addMySub = F2(
+	function (_v0, state) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		var _v1 = A2($elm$core$Dict$get, interval, state);
+		if (_v1.$ === 'Nothing') {
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				_List_fromArray(
+					[tagger]),
+				state);
+		} else {
+			var taggers = _v1.a;
+			return A3(
+				$elm$core$Dict$insert,
+				interval,
+				A2($elm$core$List$cons, tagger, taggers),
+				state);
+		}
+	});
+var $elm$core$Dict$foldl = F3(
+	function (func, acc, dict) {
+		foldl:
+		while (true) {
+			if (dict.$ === 'RBEmpty_elm_builtin') {
+				return acc;
+			} else {
+				var key = dict.b;
+				var value = dict.c;
+				var left = dict.d;
+				var right = dict.e;
+				var $temp$func = func,
+					$temp$acc = A3(
+					func,
+					key,
+					value,
+					A3($elm$core$Dict$foldl, func, acc, left)),
+					$temp$dict = right;
+				func = $temp$func;
+				acc = $temp$acc;
+				dict = $temp$dict;
+				continue foldl;
+			}
+		}
+	});
+var $elm$core$Dict$merge = F6(
+	function (leftStep, bothStep, rightStep, leftDict, rightDict, initialResult) {
+		var stepState = F3(
+			function (rKey, rValue, _v0) {
+				stepState:
+				while (true) {
+					var list = _v0.a;
+					var result = _v0.b;
+					if (!list.b) {
+						return _Utils_Tuple2(
+							list,
+							A3(rightStep, rKey, rValue, result));
+					} else {
+						var _v2 = list.a;
+						var lKey = _v2.a;
+						var lValue = _v2.b;
+						var rest = list.b;
+						if (_Utils_cmp(lKey, rKey) < 0) {
+							var $temp$rKey = rKey,
+								$temp$rValue = rValue,
+								$temp$_v0 = _Utils_Tuple2(
+								rest,
+								A3(leftStep, lKey, lValue, result));
+							rKey = $temp$rKey;
+							rValue = $temp$rValue;
+							_v0 = $temp$_v0;
+							continue stepState;
+						} else {
+							if (_Utils_cmp(lKey, rKey) > 0) {
+								return _Utils_Tuple2(
+									list,
+									A3(rightStep, rKey, rValue, result));
+							} else {
+								return _Utils_Tuple2(
+									rest,
+									A4(bothStep, lKey, lValue, rValue, result));
+							}
+						}
+					}
+				}
+			});
+		var _v3 = A3(
+			$elm$core$Dict$foldl,
+			stepState,
+			_Utils_Tuple2(
+				$elm$core$Dict$toList(leftDict),
+				initialResult),
+			rightDict);
+		var leftovers = _v3.a;
+		var intermediateResult = _v3.b;
+		return A3(
+			$elm$core$List$foldl,
+			F2(
+				function (_v4, result) {
+					var k = _v4.a;
+					var v = _v4.b;
+					return A3(leftStep, k, v, result);
+				}),
+			intermediateResult,
+			leftovers);
+	});
+var $elm$time$Time$setInterval = _Time_setInterval;
+var $elm$time$Time$spawnHelp = F3(
+	function (router, intervals, processes) {
+		if (!intervals.b) {
+			return $elm$core$Task$succeed(processes);
+		} else {
+			var interval = intervals.a;
+			var rest = intervals.b;
+			var spawnTimer = $elm$core$Process$spawn(
+				A2(
+					$elm$time$Time$setInterval,
+					interval,
+					A2($elm$core$Platform$sendToSelf, router, interval)));
+			var spawnRest = function (id) {
+				return A3(
+					$elm$time$Time$spawnHelp,
+					router,
+					rest,
+					A3($elm$core$Dict$insert, interval, id, processes));
+			};
+			return A2($elm$core$Task$andThen, spawnRest, spawnTimer);
+		}
+	});
+var $elm$time$Time$onEffects = F3(
+	function (router, subs, _v0) {
+		var processes = _v0.processes;
+		var rightStep = F3(
+			function (_v6, id, _v7) {
+				var spawns = _v7.a;
+				var existing = _v7.b;
+				var kills = _v7.c;
+				return _Utils_Tuple3(
+					spawns,
+					existing,
+					A2(
+						$elm$core$Task$andThen,
+						function (_v5) {
+							return kills;
+						},
+						$elm$core$Process$kill(id)));
+			});
+		var newTaggers = A3($elm$core$List$foldl, $elm$time$Time$addMySub, $elm$core$Dict$empty, subs);
+		var leftStep = F3(
+			function (interval, taggers, _v4) {
+				var spawns = _v4.a;
+				var existing = _v4.b;
+				var kills = _v4.c;
+				return _Utils_Tuple3(
+					A2($elm$core$List$cons, interval, spawns),
+					existing,
+					kills);
+			});
+		var bothStep = F4(
+			function (interval, taggers, id, _v3) {
+				var spawns = _v3.a;
+				var existing = _v3.b;
+				var kills = _v3.c;
+				return _Utils_Tuple3(
+					spawns,
+					A3($elm$core$Dict$insert, interval, id, existing),
+					kills);
+			});
+		var _v1 = A6(
+			$elm$core$Dict$merge,
+			leftStep,
+			bothStep,
+			rightStep,
+			newTaggers,
+			processes,
+			_Utils_Tuple3(
+				_List_Nil,
+				$elm$core$Dict$empty,
+				$elm$core$Task$succeed(_Utils_Tuple0)));
+		var spawnList = _v1.a;
+		var existingDict = _v1.b;
+		var killTask = _v1.c;
+		return A2(
+			$elm$core$Task$andThen,
+			function (newProcesses) {
+				return $elm$core$Task$succeed(
+					A2($elm$time$Time$State, newTaggers, newProcesses));
+			},
+			A2(
+				$elm$core$Task$andThen,
+				function (_v2) {
+					return A3($elm$time$Time$spawnHelp, router, spawnList, existingDict);
+				},
+				killTask));
+	});
+var $elm$time$Time$onSelfMsg = F3(
+	function (router, interval, state) {
+		var _v0 = A2($elm$core$Dict$get, interval, state.taggers);
+		if (_v0.$ === 'Nothing') {
+			return $elm$core$Task$succeed(state);
+		} else {
+			var taggers = _v0.a;
+			var tellTaggers = function (time) {
+				return $elm$core$Task$sequence(
+					A2(
+						$elm$core$List$map,
+						function (tagger) {
+							return A2(
+								$elm$core$Platform$sendToApp,
+								router,
+								tagger(time));
+						},
+						taggers));
+			};
+			return A2(
+				$elm$core$Task$andThen,
+				function (_v1) {
+					return $elm$core$Task$succeed(state);
+				},
+				A2($elm$core$Task$andThen, tellTaggers, $elm$time$Time$now));
+		}
+	});
+var $elm$core$Basics$composeL = F3(
+	function (g, f, x) {
+		return g(
+			f(x));
+	});
+var $elm$time$Time$subMap = F2(
+	function (f, _v0) {
+		var interval = _v0.a;
+		var tagger = _v0.b;
+		return A2(
+			$elm$time$Time$Every,
+			interval,
+			A2($elm$core$Basics$composeL, f, tagger));
+	});
+_Platform_effectManagers['Time'] = _Platform_createManager($elm$time$Time$init, $elm$time$Time$onEffects, $elm$time$Time$onSelfMsg, 0, $elm$time$Time$subMap);
+var $elm$time$Time$subscription = _Platform_leaf('Time');
+var $elm$time$Time$every = F2(
+	function (interval, tagger) {
+		return $elm$time$Time$subscription(
+			A2($elm$time$Time$Every, interval, tagger));
+	});
 var $author$project$Main$subscriptions = function (_v0) {
-	return $elm$core$Platform$Sub$none;
+	return A2($elm$time$Time$every, 1000, $author$project$Main$Tick);
 };
 var $author$project$Main$ClockedIn = function (a) {
 	return {$: 'ClockedIn', a: a};
@@ -6228,7 +6517,7 @@ var $author$project$Config$errorToString = function (error) {
 		case 'Timeout':
 			return 'Error, trouble connecting to the internet';
 		case 'NetworkError':
-			return 'Error, an unknown network error has occured, please try again later';
+			return 'An unknown network error has occured, please try again later';
 		case 'BadStatus':
 			var statusInt = error.a;
 			return 'Error, bad status of: ' + $elm$core$String$fromInt(statusInt);
@@ -6271,22 +6560,6 @@ var $elm$http$Http$jsonBody = function (value) {
 		A2($elm$json$Json$Encode$encode, 0, value));
 };
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $elm$time$Time$Name = function (a) {
-	return {$: 'Name', a: a};
-};
-var $elm$time$Time$Offset = function (a) {
-	return {$: 'Offset', a: a};
-};
-var $elm$time$Time$Zone = F2(
-	function (a, b) {
-		return {$: 'Zone', a: a, b: b};
-	});
-var $elm$time$Time$customZone = $elm$time$Time$Zone;
-var $elm$time$Time$Posix = function (a) {
-	return {$: 'Posix', a: a};
-};
-var $elm$time$Time$millisToPosix = $elm$time$Time$Posix;
-var $elm$time$Time$now = _Time_now($elm$time$Time$millisToPosix);
 var $elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -6313,6 +6586,20 @@ var $author$project$Main$showDialog = _Platform_outgoingPort('showDialog', $elm$
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
+			case 'Tick':
+				var newTime = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{time: newTime}),
+					$elm$core$Platform$Cmd$none);
+			case 'AdjustTimeZone':
+				var newZone = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{zone: newZone}),
+					$elm$core$Platform$Cmd$none);
 			case 'UpdatePin':
 				var pin = msg.a;
 				return _Utils_Tuple2(
@@ -11945,11 +12232,6 @@ var $mdgriffith$elm_ui$Element$Input$applyLabel = F3(
 		}
 	});
 var $elm$html$Html$Attributes$attribute = $elm$virtual_dom$VirtualDom$attribute;
-var $elm$core$Basics$composeL = F3(
-	function (g, f, x) {
-		return g(
-			f(x));
-	});
 var $mdgriffith$elm_ui$Element$Input$autofill = A2(
 	$elm$core$Basics$composeL,
 	$mdgriffith$elm_ui$Internal$Model$Attr,
@@ -13083,6 +13365,7 @@ var $mdgriffith$elm_ui$Internal$Model$Heading = function (a) {
 	return {$: 'Heading', a: a};
 };
 var $mdgriffith$elm_ui$Element$Region$heading = A2($elm$core$Basics$composeL, $mdgriffith$elm_ui$Internal$Model$Describe, $mdgriffith$elm_ui$Internal$Model$Heading);
+var $mdgriffith$elm_ui$Element$html = $mdgriffith$elm_ui$Internal$Model$unstyled;
 var $mdgriffith$elm_ui$Internal$Model$OnlyDynamic = F2(
 	function (a, b) {
 		return {$: 'OnlyDynamic', a: a, b: b};
@@ -13813,6 +14096,225 @@ var $author$project$Main$showIfPin = F2(
 	function (bool, content) {
 		return bool ? content : $mdgriffith$elm_ui$Element$none;
 	});
+var $author$project$Clock$Hour = {$: 'Hour'};
+var $elm$svg$Svg$trustedNode = _VirtualDom_nodeNS('http://www.w3.org/2000/svg');
+var $elm$svg$Svg$circle = $elm$svg$Svg$trustedNode('circle');
+var $elm$svg$Svg$line = $elm$svg$Svg$trustedNode('line');
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $elm$svg$Svg$Attributes$x1 = _VirtualDom_attribute('x1');
+var $elm$svg$Svg$Attributes$x2 = _VirtualDom_attribute('x2');
+var $elm$svg$Svg$Attributes$y1 = _VirtualDom_attribute('y1');
+var $elm$svg$Svg$Attributes$y2 = _VirtualDom_attribute('y2');
+var $author$project$Clock$clockTickMark = function (angle) {
+	var strokeWidth = (!A2($elm$core$Basics$modBy, 90, angle)) ? 'stroke-width: 0.5;' : '';
+	return A2(
+		$elm$svg$Svg$line,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$Attributes$attribute,
+				'style',
+				'transform: rotate(' + ($elm$core$String$fromInt(angle) + ('deg); ' + strokeWidth))),
+				$elm$svg$Svg$Attributes$x1('15'),
+				$elm$svg$Svg$Attributes$x2('16'),
+				$elm$svg$Svg$Attributes$y1('0'),
+				$elm$svg$Svg$Attributes$y2('0')
+			]),
+		_List_Nil);
+};
+var $elm$svg$Svg$g = $elm$svg$Svg$trustedNode('g');
+var $author$project$Clock$minuteHand = A2(
+	$elm$svg$Svg$line,
+	_List_fromArray(
+		[
+			A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.6;'),
+			$elm$svg$Svg$Attributes$x1('0'),
+			$elm$svg$Svg$Attributes$x2('13'),
+			$elm$svg$Svg$Attributes$y1('0'),
+			$elm$svg$Svg$Attributes$y2('0')
+		]),
+	_List_Nil);
+var $author$project$Clock$secondHand = A2(
+	$elm$svg$Svg$line,
+	_List_fromArray(
+		[
+			A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 0.3; stroke: #d00505;'),
+			$elm$svg$Svg$Attributes$x1('0'),
+			$elm$svg$Svg$Attributes$x2('16'),
+			$elm$svg$Svg$Attributes$y1('0'),
+			$elm$svg$Svg$Attributes$y2('0')
+		]),
+	_List_Nil);
+var $elm$svg$Svg$svg = $elm$svg$Svg$trustedNode('svg');
+var $elm$time$Time$flooredDiv = F2(
+	function (numerator, denominator) {
+		return $elm$core$Basics$floor(numerator / denominator);
+	});
+var $elm$time$Time$toAdjustedMinutesHelp = F3(
+	function (defaultOffset, posixMinutes, eras) {
+		toAdjustedMinutesHelp:
+		while (true) {
+			if (!eras.b) {
+				return posixMinutes + defaultOffset;
+			} else {
+				var era = eras.a;
+				var olderEras = eras.b;
+				if (_Utils_cmp(era.start, posixMinutes) < 0) {
+					return posixMinutes + era.offset;
+				} else {
+					var $temp$defaultOffset = defaultOffset,
+						$temp$posixMinutes = posixMinutes,
+						$temp$eras = olderEras;
+					defaultOffset = $temp$defaultOffset;
+					posixMinutes = $temp$posixMinutes;
+					eras = $temp$eras;
+					continue toAdjustedMinutesHelp;
+				}
+			}
+		}
+	});
+var $elm$time$Time$toAdjustedMinutes = F2(
+	function (_v0, time) {
+		var defaultOffset = _v0.a;
+		var eras = _v0.b;
+		return A3(
+			$elm$time$Time$toAdjustedMinutesHelp,
+			defaultOffset,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				60000),
+			eras);
+	});
+var $elm$time$Time$toHour = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			24,
+			A2(
+				$elm$time$Time$flooredDiv,
+				A2($elm$time$Time$toAdjustedMinutes, zone, time),
+				60));
+	});
+var $elm$time$Time$toMinute = F2(
+	function (zone, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2($elm$time$Time$toAdjustedMinutes, zone, time));
+	});
+var $elm$time$Time$toSecond = F2(
+	function (_v0, time) {
+		return A2(
+			$elm$core$Basics$modBy,
+			60,
+			A2(
+				$elm$time$Time$flooredDiv,
+				$elm$time$Time$posixToMillis(time),
+				1000));
+	});
+var $elm$svg$Svg$Attributes$viewBox = _VirtualDom_attribute('viewBox');
+var $elm$core$Basics$cos = _Basics_cos;
+var $author$project$Clock$formatHand = function (hand) {
+	switch (hand.$) {
+		case 'Hour':
+			return 'stroke-width: 1;';
+		case 'Minute':
+			return 'stroke-width: 0.6;';
+		default:
+			return 'stroke-width: 0.3; stroke: #d00505;';
+	}
+};
+var $elm$core$Basics$pi = _Basics_pi;
+var $elm$core$Basics$sin = _Basics_sin;
+var $author$project$Clock$viewHand = F4(
+	function (hand, width, length, turns) {
+		var t = (2 * $elm$core$Basics$pi) * (turns - 0.25);
+		var x = 200 + (length * $elm$core$Basics$cos(t));
+		var y = 200 + (length * $elm$core$Basics$sin(t));
+		var handStyle = $author$project$Clock$formatHand(hand);
+		return A2(
+			$elm$svg$Svg$line,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px) rotate(0deg); stroke-width: 1;'),
+					$elm$svg$Svg$Attributes$x1('0'),
+					$elm$svg$Svg$Attributes$x2('9'),
+					$elm$svg$Svg$Attributes$y1('0'),
+					$elm$svg$Svg$Attributes$y2('0')
+				]),
+			_List_Nil);
+	});
+var $elm$svg$Svg$Attributes$width = _VirtualDom_attribute('width');
+var $author$project$Clock$view = F2(
+	function (zone, time) {
+		var second = A2($elm$time$Time$toSecond, zone, time);
+		var minute = A2($elm$time$Time$toMinute, zone, time);
+		var hour = A2($elm$time$Time$toHour, zone, time);
+		return A2(
+			$elm$html$Html$div,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$Attributes$attribute, 'style', 'background: #dedede;')
+				]),
+			_List_fromArray(
+				[
+					A2(
+					$elm$svg$Svg$svg,
+					_List_fromArray(
+						[
+							A2($elm$html$Html$Attributes$attribute, 'style', 'fill: white; stroke: black; stroke-width: 1; stroke-linecap: round;'),
+							$elm$svg$Svg$Attributes$width('400px'),
+							$elm$svg$Svg$Attributes$viewBox('0 0 40 40')
+						]),
+					_List_fromArray(
+						[
+							A2(
+							$elm$svg$Svg$circle,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$attribute, 'cx', '20'),
+									A2($elm$html$Html$Attributes$attribute, 'cy', '20'),
+									A2($elm$html$Html$Attributes$attribute, 'r', '19')
+								]),
+							_List_Nil),
+							A2(
+							$elm$svg$Svg$g,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$attribute, 'style', 'transform: translate(20px, 20px); stroke-width: 0.2;')
+								]),
+							_List_fromArray(
+								[
+									$author$project$Clock$clockTickMark(30),
+									$author$project$Clock$clockTickMark(60),
+									$author$project$Clock$clockTickMark(90),
+									$author$project$Clock$clockTickMark(120),
+									$author$project$Clock$clockTickMark(150),
+									$author$project$Clock$clockTickMark(180),
+									$author$project$Clock$clockTickMark(210),
+									$author$project$Clock$clockTickMark(240),
+									$author$project$Clock$clockTickMark(270),
+									$author$project$Clock$clockTickMark(300),
+									$author$project$Clock$clockTickMark(330),
+									$author$project$Clock$clockTickMark(360)
+								])),
+							A4($author$project$Clock$viewHand, $author$project$Clock$Hour, 6, 60, hour / 12),
+							$author$project$Clock$minuteHand,
+							$author$project$Clock$secondHand,
+							A2(
+							$elm$svg$Svg$circle,
+							_List_fromArray(
+								[
+									A2($elm$html$Html$Attributes$attribute, 'cx', '20'),
+									A2($elm$html$Html$Attributes$attribute, 'cy', '20'),
+									A2($elm$html$Html$Attributes$attribute, 'r', '0.7'),
+									A2($elm$html$Html$Attributes$attribute, 'style', 'stroke: #d00505; stroke-width: 0.2;')
+								]),
+							_List_Nil)
+						]))
+				]));
+	});
 var $author$project$Main$UpdatePin = function (a) {
 	return {$: 'UpdatePin', a: a};
 };
@@ -13926,6 +14428,8 @@ var $author$project$Main$view = function (model) {
 					$author$project$Main$showIfPin,
 					showSecureSection,
 					$author$project$Main$positionSelect(model)),
+					$mdgriffith$elm_ui$Element$html(
+					A2($author$project$Clock$view, model.zone, model.time)),
 					function () {
 					var _v0 = model.jobRole;
 					if (_v0.$ === 'Just') {

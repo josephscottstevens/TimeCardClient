@@ -11,6 +11,6 @@ clean up ClockedIn error handling
 
 Low Priority:
 install elmjutsu
-
+the message "You've Clocked In successfully!" is super annoying... why does it have to be a popup? Can't it just dissapear after a bit?
 --
 Separate app for managing admin stuff, like employee data, roles, that kinda thing

@@ -18,7 +18,7 @@ errorToString error =
             "Error, trouble connecting to the internet"
 
         NetworkError ->
-            "Error, an unknown network error has occured, please try again later"
+            "An unknown network error has occured, please try again later"
 
         BadStatus statusInt ->
             "Error, bad status of: " ++ String.fromInt statusInt

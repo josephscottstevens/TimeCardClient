@@ -47,12 +47,14 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    Time.every 1000 Tick
 
 
 init : List ( String, Int, Maybe Int ) -> ( Model, Cmd Msg )
 init timeEntries =
-    ( { pin = ""
+    ( { time = Time.millisToPosix 0
+      , zone = Time.utc
+      , pin = ""
       , jobRole = Nothing
       , cashCollected = ""
       , clockedInPosix = Nothing
@@ -70,12 +72,16 @@ init timeEntries =
             { url = "http://localhost:3000/jobroles"
             , expect = Http.expectJson GotJobRoles (Decode.list decodeJobRole)
             }
+        , Task.perform AdjustTimeZone Time.here
+        , Task.perform Tick Time.now
         ]
     )
 
 
 type alias Model =
-    { pin : String
+    { time : Posix
+    , zone : Time.Zone
+    , pin : String
     , jobRole : Maybe JobRole
     , cashCollected : String
     , clockedInPosix : Maybe Posix
@@ -87,11 +93,13 @@ type alias Model =
 
 
 type Msg
-    = UpdatePin String
+    = Tick Posix
+    | AdjustTimeZone Time.Zone
+    | UpdatePin String
     | UpdateJobRole JobRole
     | UpdateCashCollected String
     | ClockInClockOut
-    | NewTime Time.Posix
+    | NewTime Posix
     | ClockedIn (Result Http.Error String)
     | GotJobRoles (Result Http.Error (List JobRole))
     | GotEmployees (Result Http.Error (List Employee))
@@ -100,6 +108,16 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Tick newTime ->
+            ( { model | time = newTime }
+            , Cmd.none
+            )
+
+        AdjustTimeZone newZone ->
+            ( { model | zone = newZone }
+            , Cmd.none
+            )
+
         UpdatePin pin ->
             ( if String.length pin <= 4 then
                 { model
@@ -212,6 +230,7 @@ view model =
                 (text "Time Card Entry")
             , viewCurrentPassword model.pin showSecureSection
             , showIfPin showSecureSection (positionSelect model)
+            , Element.html (Clock.view model.zone model.time)
             , case model.jobRole of
                 Just jobRole ->
                     if jobRole.doesCashOut then
